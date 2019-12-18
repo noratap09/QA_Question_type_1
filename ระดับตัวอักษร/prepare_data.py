@@ -86,15 +86,11 @@ for count_data , data in enumerate(json_obj['data'],start=1):
                 all_input.append(pre_data)
                 all_output.append(pre_ans)
 
-        del(pre_data)
-        del(pre_ans)
-        del(input_text)
-        del(txt)
         #check_point
         if(count_data%ck_point_time==0):
                 ck_point(all_input,all_output,math.floor(count_data/ck_point_time))
-                all_input.clear
-                all_output.clear
+                all_input.clear()
+                all_output.clear()
                 last_data_count = count_data
                 #print(pre_data)
 
