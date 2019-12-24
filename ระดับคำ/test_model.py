@@ -1,3 +1,4 @@
+"""
 from keras.models import Model, Sequential
 from keras.layers import  Input, Dense, Conv2D, MaxPool2D, Flatten ,Conv1D, Reshape
 from keras.callbacks import ModelCheckpoint, Callback
@@ -47,3 +48,25 @@ print(x_train.shape)
 
 #show_result(model,x_train,y_train)
 #print(model.predict(x_train))
+"""
+import json
+
+my_file = open("data_set_fix.json",'r',encoding = 'utf-8-sig')
+txt = my_file.read()
+
+json_obj = json.loads(txt)
+
+article_id = json_obj['data'][0]['article_id']
+print(article_id)
+
+import numpy as np
+
+x_train = np.load("train_data_2\input\input_A_"+str(1)+".npy")
+y_train = np.load("train_data_2\output\output_A_"+str(1)+".npy")
+
+from elasticsearch import Elasticsearch
+es = Elasticsearch()
+txt = es.get(index="test_search_engine_v1",doc_type='_doc',id=str(115035))
+
+print(txt['_source']['text'][76-25+3])
+print(y_train[1].argmax())

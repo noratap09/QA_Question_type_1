@@ -11,11 +11,11 @@ def make_heatmap(name_file,label1,label2,data):
     ax.set_xticks(np.arange(len(label1)))
     ax.set_yticks(np.arange(len(label2)))
     # ... and label them with the respective list entries
-    ax.set_xticklabels(label1,fontname="Tahoma",fontsize=5)
-    ax.set_yticklabels(label2,fontname="Tahoma",fontsize=5)
+    ax.set_xticklabels(label1,fontname="Tahoma",fontsize=3)
+    ax.set_yticklabels(label2,fontname="Tahoma",fontsize=3)
 
-    ax.set_xlabel("sentence")
-    ax.set_ylabel("Question")
+    ax.set_xlabel("Question")
+    ax.set_ylabel("sentence")
 
     # Rotate the tick labels and set their alignment.
     plt.setp(ax.get_xticklabels(), rotation=90, ha="right",
@@ -29,6 +29,6 @@ def make_heatmap(name_file,label1,label2,data):
     """
 
     fig.tight_layout()
-    plt.savefig(name_file)
+    plt.savefig(name_file,dpi=1000)
     plt.clf()
 

@@ -40,6 +40,7 @@ es = Elasticsearch()
 
 question_len = 100
 input_text_len = 100
+Word2Vec_len = 300
 slide_size = 75 #overlap 100
 
 all_input = list()
@@ -59,10 +60,10 @@ def ck_point(all_input,all_output,k):
         all_input = np.asarray(all_input)
         all_output = np.asarray(all_output)
 
-        np.save("train_data\input\input_A_"+str(k),all_input)
-        np.save("train_data\output\output_A_"+str(k),all_output)
+        np.save("train_data_2\input\input_A_"+str(k),all_input)
+        np.save("train_data_2\output\output_A_"+str(k),all_output)
 
-for count_data , data in enumerate(json_obj['data'][0:1000],start=1):
+for count_data , data in enumerate(json_obj['data'][0:1100],start=1):
     if(data['question_type']==1):
         begin_count = 1
         end_count = 0
@@ -78,60 +79,70 @@ for count_data , data in enumerate(json_obj['data'][0:1000],start=1):
         txt = es.get(index="test_search_engine_v1",doc_type='_doc',id=str(article_id))
         txt = txt['_source']['text']
         txt = [x.lower() for x in txt]
+
+        print("TXT : ",txt)
+
+        ck_answer = list()
+        answer = data['answer']
+
+        print("t ->",math.ceil(len(txt)/slide_size))
         for i in range(0,math.ceil(len(txt)/slide_size)):
-                pre_data = np.zeros((question_len,input_text_len,2),dtype=np.float32)
-                pre_ans = np.zeros((3),dtype=np.float32)
+                pre_data = np.zeros((input_text_len,question_len+Word2Vec_len),dtype=np.float32)
+                pre_ans = np.zeros((input_text_len),dtype=np.float32)
                 input_text = txt[i*slide_size:i*slide_size+input_text_len-1]
+
+                print("INPUT TXT : ",input_text)
                 #print(len(txt)," > ",i,":",i*slide_size,"-",i*slide_size+input_text_len)
                 #get input feature
                 for n_j,j in enumerate(input_text,start=0):
                         for n_k,k in enumerate(question,start=0):
                                 if(j in model.wv.vocab.keys() and k in model.wv.vocab.keys()):
-                                        pre_data[n_j,n_k,0] = model.wv.similarity(j,k)
-                                        pre_data[n_j,n_k,1] = distance.euclidean(model.wv.get_vector(j), model.wv.get_vector(k))
+                                        pre_data[n_j,n_k] = model.wv.similarity(j,k)
+                        if(j in model.wv.vocab.keys()):
+                                pre_data[n_j,question_len:question_len+Word2Vec_len] = (model.wv.get_vector(j)+2.936043)/(2.8039522+2.936043)
                 #draw_heat_map
                 #import heat_map
-                #heat_map.make_heatmap("heatmap/"+str(question_id)+"_"+str(i)+".png",input_text,question,pre_data[:,:,0])
+                #heat_map.make_heatmap("heatmap/"+str(question_id)+"_"+str(i)+".png",question,input_text,pre_data)
 
                 temp = 0
                 for n in input_text:
                         temp=temp+len(n)
+                        print(n,"|",temp)
 
                 end_count = begin_count+temp
 
-                #print("range : ",begin_count," - ",end_count)
-                #print("ans_rang : ",answer_begin_position,"-",answer_end_position)
+                print("rang begin end: ",begin_count," - ",end_count)
+                print("ans_rang : ",answer_begin_position,"-",answer_end_position)
 
                 #get output
-                if(not((answer_end_position <= begin_count) or (answer_begin_position >= end_count))):
-                    pre_ans[0] = 1.0
-                    if(answer_begin_position > begin_count):
-                        pre_ans[1] = answer_begin_position/(end_count)
-
-                    if(answer_end_position < end_count):
-                        pre_ans[2] = answer_end_position/(end_count)
-                    elif(answer_end_position >= end_count):
-                        pre_ans[2] = 1.0
-
-                #print("Ans : ",pre_ans)
+                curent = begin_count
+                overlap = 0
+                for n_target,target_data in enumerate(input_text,start=0):
+                        if(not((answer_end_position <= curent) or (answer_begin_position >= (curent+len(target_data))))):
+                                pre_ans[n_target] = 1.0
+                                ck_answer.append(target_data)
+                                print("rang : ",curent,"-", (curent+len(target_data)))
+                                print(target_data)
+                        if(n_target>=slide_size):
+                                print("OVER LAP : ",target_data)
+                                overlap=overlap+len(target_data)
+                        curent = curent+len(target_data)
+                begin_count = end_count-overlap
+                    
 
                 #add input and output to list
                 all_input.append(pre_data)
                 all_output.append(pre_ans)
 
-                #update count word
-                #25 is overlapping
-                overlap = 0
-                for n in input_text[(i*slide_size+input_text_len-1)-(25):i*slide_size+input_text_len-1]:
-                        overlap=overlap+len(n)
-                begin_count = end_count-overlap
-
+        print("ANS : ",ck_answer)
+        print("CK_ANS : ",answer)
         #check_point
         ck_point(all_input,all_output,int(question_id))
         all_input.clear()
         all_output.clear()
-        last_data_count = count_data
-                #print(pre_data)
+
+        ck_answer.clear()
+        #print(pre_data)
 
 #save final
 #ck_point(all_input,all_output,math.ceil((last_data_count+1)/ck_point_time))
