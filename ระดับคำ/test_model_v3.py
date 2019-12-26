@@ -22,8 +22,8 @@ json_obj = json.loads(txt)
 
 def show_result(model,num_train_file):    
     print("Load Data : ",num_train_file)
-    x_train = np.load("train_data_2\input\input_A_"+str(num_train_file)+".npy")
-    y_train = np.load("train_data_2\output\output_A_"+str(num_train_file)+".npy")
+    x_train = np.load("train_data_3\input\input_A_"+str(num_train_file)+".npy")
+    y_train = np.load("train_data_3\output\output_A_"+str(num_train_file)+".npy")
     x_train = x_train[:,:,:]
 
     question = json_obj['data'][num_train_file-1]['question'].lower()
@@ -51,12 +51,20 @@ def show_result(model,num_train_file):
     print("Q : ",question)
     print("GT : ",answer)
     print("Pred : ",pre_ans)
+    if(("".join(pre_ans)).find(answer)):
+        return True
     pre_ans.clear()
+    return False
 
 model = load_model("train_model_v3\model_v3.h5")
 
 print("--------------SHOW RESULT---------------")
 t_score = 0
 f_score = 0
-for num_train_file in range(1001,1101):
-    show_result(model,num_train_file)
+for num_train_file in range(14000,15001):
+    if(show_result(model,num_train_file)):
+        t_score = t_score + 1
+    else:
+        f_score = f_score + 1
+print("True :",t_score,"/",(t_score+f_score))
+print("False :",f_score,"/",(t_score+f_score))
