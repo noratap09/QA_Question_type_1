@@ -42,7 +42,7 @@ def show_result(model,num_train_file):
         #print(pred[i])
         #input()
         for j in range(0,len(input_text)):
-            if(pred[i][j][0]>0.05):
+            if(pred[i][j][0]>0.02):
                 #print("OK")
                 #print(input_text[j])
                 pre_ans.append(input_text[j])
@@ -51,7 +51,7 @@ def show_result(model,num_train_file):
     print("Q : ",question)
     print("GT : ",answer)
     print("Pred : ",pre_ans)
-    if(("".join(pre_ans)).find(answer)):
+    if(("".join(pre_ans)).find(answer)!=-1):
         return True
     pre_ans.clear()
     return False

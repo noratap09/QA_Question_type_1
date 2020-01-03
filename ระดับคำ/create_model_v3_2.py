@@ -7,15 +7,18 @@ import matplotlib.pyplot as plt
 import math
 
 #Create Model
-question_len = 100
+question_len = 128
 input_text_len = 128
 Word2Vec_len = 300
 pos_len = 46
-slide_size = 64 #overlap 100
+slide_size = 64 #overlap 64
 
-Input_layer = Input(shape=(input_text_len,(question_len+Word2Vec_len+pos_len),))
-#Contracting Path
-Con1 = Conv1D(16, 3,padding="same", kernel_initializer='he_normal')(Input_layer)
+#Input Path
+Input_layer_pagger = Input(shape=(input_text_len,(Word2Vec_len+pos_len),))
+Input_layer_question = Input(shape=(question_len,(Word2Vec_len+pos_len),))
+
+#Contracting Path 1
+Con1 = Conv1D(16, 3,padding="same", kernel_initializer='he_normal')(Input_layer_pagger)
 Bat1 = BatchNormalization()(Con1)
 Act1 = Activation("relu")(Bat1)
 
@@ -59,8 +62,54 @@ Act8 = Activation("relu")(Bat8)
 Down4 = MaxPooling1D(2)(Act8)
 Drop4 = Dropout(0.1)(Down4)
 
+#Contracting Path 2
+Con1_2 = Conv1D(16, 3,padding="same", kernel_initializer='he_normal')(Input_layer_question)
+Bat1_2 = BatchNormalization()(Con1_2)
+Act1_2 = Activation("relu")(Bat1_2)
+
+Con2_2 = Conv1D(16, 3,padding="same", kernel_initializer='he_normal')(Act1_2)
+Bat2_2 = BatchNormalization()(Con2_2)
+Act2_2 = Activation("relu")(Bat2_2)
+
+Down1_2 = MaxPooling1D(2)(Act2_2)
+Drop1_2 = Dropout(0.1)(Down1_2)
+
+Con3_2 = Conv1D(32, 3,padding="same", kernel_initializer='he_normal')(Drop1_2)
+Bat3_2 = BatchNormalization()(Con3_2)
+Act3_2 = Activation("relu")(Bat3_2)
+
+Con4_2 = Conv1D(32, 3,padding="same", kernel_initializer='he_normal')(Act3_2)
+Bat4_2 = BatchNormalization()(Con4_2)
+Act4_2 = Activation("relu")(Bat4_2)
+
+Down2_2 = MaxPooling1D(2)(Act4_2)
+Drop2_2 = Dropout(0.1)(Down2_2)
+
+Con5_2 = Conv1D(64, 3,padding="same", kernel_initializer='he_normal')(Drop2_2)
+Bat5_2 = BatchNormalization()(Con5_2)
+Act5_2 = Activation("relu")(Bat5_2)
+
+Con6_2 = Conv1D(64, 3,padding="same", kernel_initializer='he_normal')(Act5_2)
+Bat6_2 = BatchNormalization()(Con6_2)
+Act6_2 = Activation("relu")(Bat6_2)
+
+Down3_2 = MaxPooling1D(2)(Act6_2)
+Drop3_2 = Dropout(0.1)(Down3_2)
+
+Con7_2 = Conv1D(128, 3,padding="same", kernel_initializer='he_normal')(Drop3_2)
+Bat7_2 = BatchNormalization()(Con7_2)
+Act7_2 = Activation("relu")(Bat7_2)
+
+Con8_2 = Conv1D(128, 3,padding="same", kernel_initializer='he_normal')(Act7_2)
+Bat8_2 = BatchNormalization()(Con8_2)
+Act8_2 = Activation("relu")(Bat8_2)
+
+Down4_2 = MaxPooling1D(2)(Act8_2)
+Drop4_2 = Dropout(0.1)(Down4_2)
+
 #Middle Path
-Con9 = Conv1D(256, 3,padding="same", kernel_initializer='he_normal')(Drop4)
+Con9 = Concatenate()([Drop4,Drop4_2])
+Con9 = Conv1D(256, 3,padding="same", kernel_initializer='he_normal')(Con9)
 Bat9 = BatchNormalization()(Con9)
 Act9 = Activation("relu")(Bat9)
 
@@ -70,7 +119,7 @@ Act10 = Activation("relu")(Bat10)
 
 #expansive path
 Up1 = UpSampling1D(2)(Act10)
-Up1 = Concatenate()([Up1,Act8])
+Up1 = Concatenate()([Up1,Act8,Act8_2])
 Drop5 = Dropout(0.1)(Up1)
 
 Con11 = Conv1D(128, 3,padding="same", kernel_initializer='he_normal')(Drop5)
@@ -82,7 +131,7 @@ Bat12 = BatchNormalization()(Con12)
 Act12 = Activation("relu")(Bat12)
 
 Up2 = UpSampling1D(2)(Act12)
-Up2 = Concatenate()([Up2,Act6])
+Up2 = Concatenate()([Up2,Act6,Act6_2])
 Drop6 = Dropout(0.1)(Up2)
 
 Con13 = Conv1D(64, 3,padding="same", kernel_initializer='he_normal')(Drop6)
@@ -94,7 +143,7 @@ Bat14 = BatchNormalization()(Con14)
 Act14 = Activation("relu")(Bat14)
 
 Up3 = UpSampling1D(2)(Act14)
-Up3 = Concatenate()([Up3,Act4])
+Up3 = Concatenate()([Up3,Act4,Act4_2])
 Drop7 = Dropout(0.1)(Up3)
 
 Con15 = Conv1D(32, 3,padding="same", kernel_initializer='he_normal')(Drop7)
@@ -106,7 +155,7 @@ Bat16 = BatchNormalization()(Con16)
 Act16 = Activation("relu")(Bat16)
 
 Up4 = UpSampling1D(2)(Act16)
-Up4 = Concatenate()([Up4,Act2])
+Up4 = Concatenate()([Up4,Act2,Act2_2])
 Drop8 = Dropout(0.1)(Up4)
 
 Con17 = Conv1D(16, 3,padding="same", kernel_initializer='he_normal')(Drop8)
@@ -120,13 +169,13 @@ Act18 = Activation("relu")(Bat18)
 Output_layer = Conv1D(1, 3, activation='sigmoid',padding="same", kernel_initializer='he_normal')(Act18)
 
 
-model = Model(inputs=Input_layer, outputs=Output_layer)
+model = Model(inputs=[Input_layer_pagger,Input_layer_question], outputs=Output_layer)
 
 model.summary()
 
 #Save Model Diagram
 from keras.utils import plot_model
-plot_model(model, to_file='model_Unet_Con1d.png')
+plot_model(model, to_file='model_Unet_Con1d_Bi_Input.png')
 """
 #Train model
 def iou(y_true, y_pred):
@@ -156,7 +205,8 @@ def iou(y_true, y_pred):
     IOU = (I+K.epsilon())/(U+K.epsilon())
     #return IOU
     return IOU*K.cast(val_ck1_true,dtype="float32")
-"""
+
+
 import json
 
 from elasticsearch import Elasticsearch
@@ -210,7 +260,7 @@ all_y_train = list()
 
 all_x_val = list()
 all_y_val = list()
-"""
+
 #Load Data Tarin
 for num_train_file in range(1,14001):
     print("Load Data : ",num_train_file)
@@ -222,7 +272,7 @@ for num_train_file in range(1,14001):
     for y in y_train:
         all_y_train.append(np.reshape(y,(y.shape[0],1)))
     #print(y_train)
-"""
+
 #Load Data Val
 for num_train_file in range(14001,15001):
     print("Load Data : ",num_train_file)
@@ -243,7 +293,7 @@ all_y_val = np.asarray(all_y_val)
 
 #print(all_y_train.shape,all_y_val.shape)
 
-"""
+
 #Load Train Data
 def generator_train_data():
     while(True):
@@ -285,14 +335,14 @@ def generator_val_data():
             del(all_x_val)
             del(all_y_val)
 
-"""
+
 #Train Model
 BATCH_SIZE = 10
 EPOCHS = 10
 
 checkpoint = ModelCheckpoint('train_model_v3\model_Unet.h5', verbose=1, monitor='val_loss',save_best_only=True, mode='min')
 
-model = load_model('train_model_v3\model_Unet_final.h5')
+model = load_model('train_model_v3\model_Unet.h5')
 
 #print(len(all_y_train))
 
@@ -323,20 +373,20 @@ for i in range(0,EPOCHS):
 
             all_x_train = list()
             all_y_train = list()
-"""
+
 history = model.fit_generator(generator=generator_train_data(),
                               validation_data=generator_val_data(),
                               epochs=EPOCHS,
                               callbacks=[checkpoint],
                               steps_per_epoch=(215025//BATCH_SIZE),
                               validation_steps=(18458//BATCH_SIZE))
-"""
+
 #215025,18458
 plt.plot(history.history['loss'])
 plt.plot(history.history['val_loss'])
 plt.savefig('train_model_v3\his\model_v3_epoch_final.png')
 plt.clf()
-"""
+
 #show result after train
 print("--------------SHOW RESULT---------------")
 for num_train_file in range(1,1001):
