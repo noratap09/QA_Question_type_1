@@ -90,10 +90,10 @@ def ck_point(all_input,all_output,k):
         all_input = np.asarray(all_input)
         all_output = np.asarray(all_output)
 
-        np.save("train_data_2\input\input_A_"+str(k),all_input)
-        np.save("train_data_2\output\output_A_"+str(k),all_output)
+        np.save("train_data_2_2\input\input_A_"+str(k),all_input)
+        np.save("train_data_2_2\output\output_A_"+str(k),all_output)
 
-for count_data , data in enumerate(json_obj['data'][13000:15000],start=1):
+for count_data , data in enumerate(json_obj['data'][11376:15000],start=1):
     if(data['question_type']==1):
         begin_count = 1
         end_count = 0
@@ -131,7 +131,8 @@ for count_data , data in enumerate(json_obj['data'][13000:15000],start=1):
                                 if(j in model.wv.vocab.keys() and k in model.wv.vocab.keys()):
                                         pre_data[n_j,n_k] = model.wv.similarity(j,k)
                         if(j in model.wv.vocab.keys()):
-                                pre_data[n_j,question_len:question_len+Word2Vec_len] = (model.wv.get_vector(j)+2.6491606)/(2.6491606+2.6473184)
+                                #(model.wv.get_vector(j)+2.6491606)/(2.6491606+2.6473184)
+                                pre_data[n_j,question_len:question_len+Word2Vec_len] = model.wv.get_vector(j)
                         pre_data[n_j,question_len+Word2Vec_len+(pos_all.index(result_pos[n_j][1]))] = 1.0
                 #draw_heat_map
                 #import heat_map

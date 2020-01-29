@@ -5,6 +5,7 @@ from keras import backend as K
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import sys
 
 #Create Model
 question_len = 100
@@ -156,7 +157,7 @@ def iou(y_true, y_pred):
     IOU = (I+K.epsilon())/(U+K.epsilon())
     #return IOU
     return IOU*K.cast(val_ck1_true,dtype="float32")
-"""
+
 import json
 
 from elasticsearch import Elasticsearch
@@ -198,7 +199,7 @@ def show_result(model,num_train_file):
     print("GT : ",answer)
     print("Pred : ",pre_ans)
     pre_ans.clear()
-            
+"""       
 model.compile(optimizer='sgd',
               loss='binary_crossentropy',
               metrics=['accuracy'])
@@ -233,7 +234,6 @@ for num_train_file in range(14001,15001):
         all_x_val.append(x[:,:])
     for y in y_train:
         all_y_val.append(np.reshape(y,(y.shape[0],1)))
-    #print(y_train)
 
 #all_x_train = np.asarray(all_x_train)
 #all_y_train = np.asarray(all_y_train)
@@ -287,8 +287,8 @@ def generator_val_data():
 
 """
 #Train Model
-BATCH_SIZE = 10
-EPOCHS = 10
+BATCH_SIZE = 50
+EPOCHS = 30
 
 checkpoint = ModelCheckpoint('train_model_v3\model_Unet.h5', verbose=1, monitor='val_loss',save_best_only=True, mode='min')
 
@@ -306,9 +306,9 @@ for i in range(0,EPOCHS):
             all_x_train.append(x[:,:])
         for y in y_train:
             all_y_train.append(np.reshape(y,(y.shape[0],1)))
-        #print(y_train)
+        print("Memory used :",sys.getsizeof(all_x_train))
         
-        if(num_train_file%100==0):
+        if(sys.getsizeof(all_x_train)>=80000):
             all_x_train = np.asarray(all_x_train)
             all_y_train = np.asarray(all_y_train)
 

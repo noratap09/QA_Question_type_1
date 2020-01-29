@@ -32,12 +32,16 @@ max_question_len = 54
 
 import numpy as np
 import math
+from elasticsearch import Elasticsearch
+es = Elasticsearch()
 
-question_len = 128
+question_len = 100
 input_text_len = 128
 Word2Vec_len = 300
 slide_size = 64 #overlap 100
 
+all_input = list()
+all_output = list()
 
 ck_point_time = 1000
 last_data_count = 0
@@ -75,27 +79,61 @@ def get_index_name(in_name):
         elif(in_name == "B-EMAIL" or in_name == "I-EMAIL"): return 13  
         else: return 1
 
+#res2 = es.get(index="test_search_engine_v1",doc_type='_doc',id=str(69492))
+#res2 = res2['_source']['text'][0:10]
+#res2 = [x.lower() for x in res2]
+#print(res2)
+
 for count_data , data in enumerate(json_obj['data'][0:15000],start=1):
     if(data['question_type']==1):
-        pre_data = np.zeros((question_len,Word2Vec_len+pos_len),dtype=np.float32)
+        begin_count = 1
+        end_count = 0
+
         question_id = data['question_id']
         print("QUESTION_ID: ",question_id)
 
         question = data['question'].lower()
         question = deepcut.tokenize(question)
-        result_pos = pos_tag(question)
+        answer_begin_position = data['answer_begin_position']
+        answer_end_position = data['answer_end_position']
+        article_id = data['article_id']
+        txt = es.get(index="test_search_engine_v1",doc_type='_doc',id=str(article_id))
+        txt = txt['_source']['text']
+        txt = [x.lower() for x in txt]
 
-        for n_j,j in enumerate(question,start=0):
-                if(j in model.wv.vocab.keys()):
-                        #pre_data[n_j,0:Word2Vec_len] = (model.wv.get_vector(j)+2.6491606)/(2.6491606+2.6473184)
-                        pre_data[n_j,0:Word2Vec_len] = model.wv.get_vector(j)
-                pre_data[n_j,Word2Vec_len+(pos_all.index(result_pos[n_j][1]))] = 1.0
+        #print("TXT : ",txt)
+
+        ck_answer = list()
+        answer = data['answer']
+
+        print("t ->",math.ceil(len(txt)/slide_size))
+        for i in range(0,math.ceil(len(txt)/slide_size)):
+                pre_data = np.zeros((input_text_len,input_text_len+Word2Vec_len+pos_len),dtype=np.float32)
+                input_text = txt[i*slide_size:i*slide_size+input_text_len-1]
+
+                result_pos = pos_tag(question)
+
+                #print("INPUT TXT : ",input_text)
+                #print(len(txt)," > ",i,":",i*slide_size,"-",i*slide_size+input_text_len)
+                #get input feature
+                for n_j,j in enumerate(question,start=0):
+                        for n_k,k in enumerate(input_text,start=0):
+                                if(j in model.wv.vocab.keys() and k in model.wv.vocab.keys()):
+                                        pre_data[n_j,n_k] = model.wv.similarity(j,k)
+                        if(j in model.wv.vocab.keys()):
+                                #(model.wv.get_vector(j)+2.6491606)/(2.6491606+2.6473184)
+                                pre_data[n_j,input_text_len:input_text_len+Word2Vec_len] = model.wv.get_vector(j)
+                        pre_data[n_j,input_text_len+Word2Vec_len+(pos_all.index(result_pos[n_j][1]))] = 1.0
                 #draw_heat_map
-        #import heat_map
-        #temp = list()
-        #heat_map.make_heatmap("heatmap_question/"+str(question_id)+".png",temp,question,pre_data)
+                #import heat_map
+                #heat_map.make_heatmap("heatmap_question/"+str(question_id)+"_"+str(i)+".png",input_text,question,pre_data)   
+
+                #add input and output to list
+                all_input.append(pre_data)
+
         #check_point
-        np.save("train_data_2_2\input_question\input_A_"+str(question_id),pre_data)
+        np.save("train_data_2_2\input_question\input_A_"+str(question_id),np.asarray(all_input))
+        all_input.clear()
         #print(pre_data)
 
 #save final

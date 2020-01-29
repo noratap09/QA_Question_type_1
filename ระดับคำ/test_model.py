@@ -64,9 +64,12 @@ import numpy as np
 x_train = np.load("train_data_2\input\input_A_"+str(1)+".npy")
 y_train = np.load("train_data_2\output\output_A_"+str(1)+".npy")
 
+print(x_train[:,:,100:446].shape,y_train.shape)
+"""
 from elasticsearch import Elasticsearch
 es = Elasticsearch()
 txt = es.get(index="test_search_engine_v1",doc_type='_doc',id=str(115035))
 
 print(txt['_source']['text'][76-25+3])
 print(y_train[1].argmax())
+"""
